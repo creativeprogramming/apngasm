@@ -1,7 +1,7 @@
 apngasm
 =======
-*THIS IS CURRENTLY ONLY A MOCKUP  
-The next generation of apngasm, the APNG Assembler.
+apngasm, the APNG Assembler
+A set of libraries and a command line tool to assemble and disassemble APNG images.
 
 Building
 --------

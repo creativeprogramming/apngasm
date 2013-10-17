@@ -18,26 +18,6 @@ bool isNumber(const string s)
 	return !s.empty() && it == s.end();
 }
 
-// bool parseDelay(const string delay, int *numerator, int *denominator)
-// {
-// 	if (isNumber(delay)) { // The delay is in miliseconds
-// 		*numerator = atoi(delay.c_str());
-// 		*denominator = MILISECOND;
-// 		return true;
-// 	} else { // Delay is in fractions of a second or invalid
-// 		//TODO parse numerator and denominator
-// 		vector<string> portions;
-// 		boost::algorithm::split(portions, delay, boost::is_any_of(":"));
-// 		*numerator = atoi((portions.front()).c_str()) * 1000;
-
-// 		for (vector<string>::iterator it = portions.erase(portions.begin()); it != portions.end(); ++it) {
-// 			*numerator /= (float)atoi(it->c_str());
-// 		}
-// 		*denominator = MILISECOND;
-// 	}
-// 	return false;
-// }
-
 int parseDelay(const string delay, int *denominator)
 {
 	int delays = -1;
@@ -47,7 +27,7 @@ int parseDelay(const string delay, int *denominator)
 	} else { // Delay is in fractions of a second or invalid
 		vector<string> portions;
 		boost::algorithm::split(portions, delay, boost::is_any_of(":"));
-		delays = atoi((portions.front()).c_str()) * 1000;
+		delays = atoi((portions.front()).c_str());
 
 		for (vector<string>::iterator it = portions.erase(portions.begin()); it != portions.end(); ++it) {
 			delays /= (float)atoi(it->c_str());
@@ -57,14 +37,8 @@ int parseDelay(const string delay, int *denominator)
 	return delays;
 }
 
-int main(int argc, char* argv[])
+string description(APNGAsm apngasm)
 {
-	APNGAsm apngasm;
-	namespace bpo = boost::program_options;
-
-	// Defaults
-	int delayDenominator = MILISECOND;
-
 	stringstream description;
 	description << "APNG Assembler v" << apngasm.version() << endl \
 		<< "Assemble an APNG:\n" \
@@ -83,7 +57,31 @@ int main(int argc, char* argv[])
 		//<< "Add a frame to an existing APNG or concatinate APNG animations:\n"
 		//<< "\tapngasm outfile.png apng1.png newframe.png apng2.png [options]\n"
 		<< "options";
-	bpo::options_description opts(description.str());
+
+	return description.str();
+}
+
+void doDisassembly(APNGAsm *apngasm)
+{
+	//apngasm.disassemble("penguins.png");
+	/*char szOut[256];
+	for (unsigned int i=0; i<apngasm.frames.size(); ++i)
+	{
+		sprintf(szOut, "penguins_frame%02d.png", i);
+		apngasm.SavePNG(szOut, &apngasm.frames[i]);
+	}
+*/
+}
+
+int main(int argc, char* argv[])
+{
+	APNGAsm apngasm;
+	namespace bpo = boost::program_options;
+
+	// Defaults
+	int delayDenominator = MILISECOND;
+
+	bpo::options_description opts(description());
 	opts.add_options()
 		("help,h",	"View detailed help.")
 		("delay,d",	bpo::value<string>()->default_value("100"), "Default frame delay [in miliseconds or fractions of a second], default is 100.")
@@ -128,6 +126,7 @@ int main(int argc, char* argv[])
 
 			vector<string> fileParamsRaw( vm["files"].as< vector<string> >() );
 			string outputFile = fileParamsRaw.front();
+			//TODO Check if output file already exsists and prompt to replace
 			vector<string>::iterator fileit = fileParamsRaw.erase(fileParamsRaw.begin());
 
 			if (!regex_match(*fileit, period)) {
@@ -139,7 +138,7 @@ int main(int argc, char* argv[])
 			for (; fileit != fileParamsRaw.end(); ++fileit) {
 				if (regex_match(*fileit, period)) {
 					if (!regex_match(*fileit, png)) {
-						cout << "ERROR:  \"" << *fileit << "\" is invalid extension" << endl;
+						cout << "ERROR:  \"" << *fileit << "\" has an unsupported extension" << endl;
 						return 0;
 					}
 					files.push_back(*fileit);
@@ -152,36 +151,17 @@ int main(int argc, char* argv[])
 					*((delay.end()) - 1) = parseDelay(*fileit, &delayDenominator);
 				}
 			}
-			cout << "frame count" << files.size() << endl;
+			cout << "Frame count: " << files.size() << endl;
+			cout << "Output file: " << outputFile << endl;
+
+			for (int i = 0; i < files.size(); i++) {
+				cout << files[i] << endl;
+				apngasm.addFrame(files[i]);
+			}
+
+			apngasm.assemble(outputFile);
 		}
-		cout << "opts were passed" << endl;
-		//cout << "count: " << vm.count() << endl;
 	}
 
-
-	/*apngasm.addFrame("gold01.png", 15, 100);
-	apngasm.addFrame("gold02.png", 15, 100);
-	apngasm.addFrame("gold03.png", 15, 100);
-	apngasm.assemble("gold_anim.png");
-	cout << "frames=" << apngasm.frameCount() << endl;
-
-	apngasm.reset();
-
-	apngasm.addFrame("clock1.png", 1, 1);
-	apngasm.addFrame("clock2.png", 1, 1);
-	apngasm.addFrame("clock3.png", 1, 1);
-	apngasm.addFrame("clock4.png", 1, 1);
-	apngasm.assemble("clock_anim.png");
-	cout << "frames=" << apngasm.frameCount() << endl;
-
-	apngasm.disassemble("penguins.png");
-	char szOut[256];
-	for (unsigned int i=0; i<apngasm.frames.size(); ++i)
-	{
-		sprintf(szOut, "penguins_frame%02d.png", i);
-		apngasm.SavePNG(szOut, &apngasm.frames[i]);
-	}
-
-	cout << "OK" << endl;*/
 	return 0;
 }
