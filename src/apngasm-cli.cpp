@@ -37,8 +37,10 @@ int parseDelay(const string delay, int *denominator)
 	return delays;
 }
 
-string description(APNGAsm apngasm)
+boost::program_options::options_description* optionsDescription(APNGAsm apngasm)
 {
+	namespace bpo = boost::program_options;
+
 	stringstream description;
 	description << "APNG Assembler v" << apngasm.version() << endl \
 		<< "Assemble an APNG:\n" \
@@ -58,30 +60,17 @@ string description(APNGAsm apngasm)
 		//<< "\tapngasm outfile.png apng1.png newframe.png apng2.png [options]\n"
 		<< "options";
 
-	return description.str();
+	bpo::options_description opts(description.str());
+	return opts;
 }
 
-void doDisassembly(APNGAsm *apngasm)
+void processOptions(APNGAsm apngasm, int argc, char* argv[])
 {
-	//apngasm.disassemble("penguins.png");
-	/*char szOut[256];
-	for (unsigned int i=0; i<apngasm.frames.size(); ++i)
-	{
-		sprintf(szOut, "penguins_frame%02d.png", i);
-		apngasm.SavePNG(szOut, &apngasm.frames[i]);
-	}
-*/
-}
-
-int main(int argc, char* argv[])
-{
-	APNGAsm apngasm;
 	namespace bpo = boost::program_options;
 
-	// Defaults
 	int delayDenominator = MILISECOND;
 
-	bpo::options_description opts(description());
+
 	opts.add_options()
 		("help,h",	"View detailed help.")
 		("delay,d",	bpo::value<string>()->default_value("100"), "Default frame delay [in miliseconds or fractions of a second], default is 100.")
@@ -89,6 +78,7 @@ int main(int argc, char* argv[])
 		("file,f",	bpo::value<string>(), "Loads an XML or JSON animation directive file.")
 		("skip,s",	"Skip the first frame. When animation is not supported the first frame is shown.")
 		("version,v", "Display the version.");
+
 
 	bpo::options_description hidden("Hidden options");
 	hidden.add_options()
@@ -162,6 +152,25 @@ int main(int argc, char* argv[])
 			apngasm.assemble(outputFile);
 		}
 	}
+}
+
+void doDisassembly(APNGAsm *apngasm)
+{
+	//apngasm.disassemble("penguins.png");
+	/*char szOut[256];
+	for (unsigned int i=0; i<apngasm.frames.size(); ++i)
+	{
+		sprintf(szOut, "penguins_frame%02d.png", i);
+		apngasm.SavePNG(szOut, &apngasm.frames[i]);
+	}
+*/
+}
+
+int main(int argc, char* argv[])
+{
+	APNGAsm apngasm;
+
+	process_options(apngasm, argc, argv);
 
 	return 0;
 }
